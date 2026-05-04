@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#1f4e78" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="ค่าเช่าที่ดิน" />
+<meta name="mobile-web-app-capable" content="yes" />
+<title>คำนวณค่าเช่าที่ดิน</title>
+<style>
+/* ═══════════════════════════════════════
+   RESET & VARIABLES
+═══════════════════════════════════════ */
+*, *::before, *::after {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+:root {
+  --bg:           #eef2f7;
+  --card:         #ffffff;
+  --primary:      #1f4e78;
+  --primary-lt:   #2e75b6;
+  --primary-pale: #dbeafe;
+  --accent-input: #f8faff;
+  --soft:         #e2ecf8;
+  --text:         #0f172a;
+  --muted:        #64748b;
+  --border:       #dde5f0;
+  --green:        #16a34a;
+  --green-bg:     #dcfce7;
+  --orange:       #d97706;
+  --orange-bg:    #fef3c7;
+  --red:          #dc2626;
+  --red-bg:       #fee2e2;
+  --shadow-sm:    0 1px 3px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.04);
+  --shadow:       0 4px 20px rgba(0,0,0,0.09), 0 1px 4px rgba(0,0,0,0.04);
+  --r:            16px;
+  --r-sm:         11px;
+  --tab-h:        58px;
+  --safe-t:       env(safe-area-inset-top, 0px);
+  --safe-b:       env(safe-area-inset-bottom, 0px);
+  --safe-l:       env(safe-area-inset-left, 0px);
+  --safe-r:       env(safe-area-inset-right, 0px);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg:           #0d1117;
+    --card:         #161b22;
+    --primary:      #58a6ff;
+    --primary-lt:   #79b8ff;
+    --primary-pale: #0d2745;
+    --accent-input: #0d1117;
+    --soft:         #1c2333;
+    --text:         #e6edf3;
+    --muted:        #8b949e;
+    --border:       #21262d;
+    --green:        #3fb950;
+    --green-bg:     #0f2a1a;
+    --orange:       #e3b341;
+    --orange-bg:    #2d1f00;
+    --red:          #f85149;
+    --red-bg:       #2d0a0a;
+    --shadow-sm:    0 1px 3px rgba(0,0,0,0.3);
+    --shadow:       0 4px 20px rgba(0,0,0,0.5);
+  }
+}
+
+/* ═══════════════════════════════════════
+   BASE
+═══════════════════════════════════════ */
+html, body {
+  margin: 0; padding: 0;
+  font-family: -apple-system, 'SF Pro Text', 'Helvetica Neue', 'Sarabun', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ═══════════════════════════════════════
+   APP SHELL
+═══════════════════════════════════════ */
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+}
+
+/* ═══════════════════════════════════════
+   HEADER
+═══════════════════════════════════════ */
+#header {
+  flex-shrink: 0;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-lt) 100%);
+  color: white;
+  padding-top: calc(var(--safe-t) + 10px);
+  padding-bottom: 12px;
+  padding-left: calc(var(--safe-l) + 16px);
+  padding-right: calc(var(--safe-r) + 16px);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 2px 16px rgba(31,78,120,0.35);
+  z-index: 10;
+}
+.hdr-icon { font-size: 26px; flex-shrink: 0; }
+.hdr-text { flex: 1; min-width: 0; }
+.hdr-text h1 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hdr-text p {
+  margin: 2px 0 0;
+  font-size: 12px;
+  opacity: 0.8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hdr-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.hdr-btn {
+  width: 36px; height: 36px;
+  border: none; border-radius: 50%;
+  background: rgba(255,255,255,0.18);
+  color: white; font-size: 16px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+  flex-shrink: 0;
+}
+.hdr-btn:active { background: rgba(255,255,255,0.35); transform: scale(0.92); }
+
+/* ═══════════════════════════════════════
+   CONTENT SCROLL AREA
+═══════════════════════════════════════ */
+#content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  padding-bottom: calc(var(--tab-h) + var(--safe-b) + 20px);
+}
+
+/* ═══════════════════════════════════════
+   SECTIONS (TABS)
+═══════════════════════════════════════ */
+.section {
+  display: none;
+  padding: 14px calc(var(--safe-r) + 14px) 4px calc(var(--safe-l) + 14px);
+  animation: fadeUp 0.22s ease both;
+}
+.section.active { display: block; }
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ═══════════════════════════════════════
+   CARDS
+═══════════════════════════════════════ */
+.card {
+  background: var(--card);
+  border-radius: var(--r);
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: var(--shadow-sm);
+}
+.card-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--primary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 0 0 14px 0;
+  padding-bottom: 10px;
+  border-bottom: 1.5px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ═══════════════════════════════════════
+   FORM FIELDS
+═══════════════════════════════════════ */
+.field { margin-bottom: 12px; }
+.field:last-child { margin-bottom: 0; }
+.field > label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 5px;
+  letter-spacing: 0.02em;
+}
+.field input,
+.field select {
+  width: 100%;
+  padding: 13px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-sm);
+  font-size: 16px; /* ← สำคัญ: ป้องกัน iOS zoom */
+  font-family: inherit;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--accent-input);
+  transition: border-color 0.15s, box-shadow 0.15s;
+  -webkit-appearance: none;
+  appearance: none;
+  min-height: 48px; /* touch target */
+}
+.field input:focus,
+.field select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(46,117,182,0.18);
+}
+.field .hint {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 4px;
+  line-height: 1.4;
+}
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+/* ═══════════════════════════════════════
+   SUMMARY — BIG STAT
+═══════════════════════════════════════ */
+.big-stat {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-lt) 100%);
+  color: white;
+  border-radius: var(--r);
+  padding: 20px 18px;
+  margin-bottom: 12px;
+  text-align: center;
+  box-shadow: var(--shadow);
+}
+.big-stat .lbl  { font-size: 12px; opacity: 0.85; margin-bottom: 6px; }
+.big-stat .amt  { font-size: 32px; font-weight: 800; letter-spacing: -1px; line-height: 1; }
+.big-stat .unit { font-size: 16px; font-weight: 600; margin-left: 3px; }
+.big-stat .sub  { font-size: 11px; opacity: 0.7; margin-top: 6px; }
+
+/* ═══════════════════════════════════════
+   SUMMARY — STAT GRID
+═══════════════════════════════════════ */
+.stat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.stat {
+  background: var(--card);
+  border-radius: var(--r-sm);
+  padding: 12px 13px;
+  box-shadow: var(--shadow-sm);
+}
+.stat .lbl { font-size: 11px; color: var(--muted); margin-bottom: 3px; line-height: 1.4; }
+.stat .val { font-size: 16px; font-weight: 700; color: var(--primary); }
+.stat.green .val  { color: var(--green); }
+.stat.orange .val { color: var(--orange); }
+.stat.red .val    { color: var(--red); }
+
+/* ═══════════════════════════════════════
+   BAR CHART
+═══════════════════════════════════════ */
+.chart-scroll { overflow-x: auto; padding-bottom: 4px; -webkit-overflow-scrolling: touch; }
+.bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 90px;
+  min-width: 100%;
+  padding-top: 4px;
+}
+.bar-col { display: flex; flex-direction: column; align-items: center; flex: 1; min-width: 18px; }
+.bar-fill {
+  width: 100%;
+  border-radius: 3px 3px 0 0;
+  background: linear-gradient(to top, var(--primary), var(--primary-lt));
+  min-height: 2px;
+}
+.bar-col.adj .bar-fill {
+  background: linear-gradient(to top, var(--orange), #fbbf24);
+}
+.bar-lbl { font-size: 8px; color: var(--muted); margin-top: 3px; text-align: center; }
+
+/* ═══════════════════════════════════════
+   TABLES
+═══════════════════════════════════════ */
+.tbl-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: var(--r-sm);
+  margin: 0 -2px;
+}
+table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 320px; }
+thead th {
+  background: var(--primary);
+  color: white;
+  padding: 9px 7px;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+  letter-spacing: 0.02em;
+}
+thead th:first-child { border-top-left-radius: var(--r-sm); }
+thead th:last-child  { border-top-right-radius: var(--r-sm); }
+tbody td {
+  padding: 9px 7px;
+  border-bottom: 1px solid var(--border);
+  text-align: right;
+  font-size: 13px;
+}
+tbody td.c { text-align: center; }
+tbody td.l { text-align: left; }
+tbody tr.adj td { background: var(--orange-bg); }
+tbody tr.ttl td {
+  background: var(--soft);
+  font-weight: 700;
+  color: var(--primary);
+  border-top: 2px solid var(--primary);
+}
+.badge {
+  display: inline-block;
+  background: var(--orange);
+  color: white;
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+/* ═══════════════════════════════════════
+   NPV
+═══════════════════════════════════════ */
+.npv-card {
+  background: var(--green-bg);
+  border-radius: var(--r-sm);
+  padding: 16px;
+  text-align: center;
+  margin-top: 12px;
+}
+.npv-card .lbl { font-size: 12px; color: var(--green); font-weight: 700; margin-bottom: 4px; }
+.npv-card .val { font-size: 26px; font-weight: 800; color: var(--green); }
+.npv-note {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.6;
+  margin-top: 10px;
+  background: var(--soft);
+  border-radius: var(--r-sm);
+  padding: 10px 12px;
+}
+
+/* ═══════════════════════════════════════
+   INFO ROWS
+═══════════════════════════════════════ */
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  gap: 8px;
+}
+.info-row:last-child { border-bottom: none; padding-bottom: 0; }
+.info-row .k { color: var(--muted); flex-shrink: 0; }
+.info-row .v { font-weight: 700; text-align: right; }
+
+/* ═══════════════════════════════════════
+   ACTION BUTTONS
+═══════════════════════════════════════ */
+.btn {
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  width: 100%; padding: 14px 16px;
+  border: none; border-radius: var(--r-sm);
+  font-size: 15px; font-family: inherit; font-weight: 700;
+  cursor: pointer; min-height: 50px;
+  transition: opacity 0.15s, transform 0.1s;
+  margin-bottom: 10px;
+}
+.btn:last-child { margin-bottom: 0; }
+.btn:active { opacity: 0.82; transform: scale(0.98); }
+.btn-primary { background: linear-gradient(135deg, var(--primary), var(--primary-lt)); color: white; box-shadow: var(--shadow-sm); }
+.btn-outline  { background: transparent; color: var(--primary); border: 1.5px solid var(--primary); }
+.btn-danger   { background: var(--red-bg); color: var(--red); }
+
+/* ═══════════════════════════════════════
+   BOTTOM TAB BAR
+═══════════════════════════════════════ */
+#tabbar {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  height: calc(var(--tab-h) + var(--safe-b));
+  background: var(--card);
+  border-top: 1px solid var(--border);
+  display: flex;
+  z-index: 20;
+  padding-bottom: var(--safe-b);
+  box-shadow: 0 -2px 20px rgba(0,0,0,0.07);
+}
+.tab {
+  flex: 1;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 3px;
+  border: none; background: transparent;
+  color: var(--muted);
+  font-size: 10px; font-family: inherit; font-weight: 600;
+  cursor: pointer; padding: 6px 4px;
+  transition: color 0.15s;
+  position: relative;
+}
+.tab .ico { font-size: 22px; line-height: 1; transition: transform 0.15s; }
+.tab.active { color: var(--primary); }
+.tab.active .ico { transform: scale(1.15); }
+.tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: 6px;
+  width: 22px; height: 3px;
+  background: var(--primary);
+  border-radius: 2px;
+}
+
+/* ═══════════════════════════════════════
+   TOAST
+═══════════════════════════════════════ */
+#toast {
+  position: fixed;
+  bottom: calc(var(--tab-h) + var(--safe-b) + 14px);
+  left: 50%; transform: translateX(-50%) translateY(16px);
+  background: rgba(15,23,42,0.9);
+  color: white;
+  padding: 10px 22px;
+  border-radius: 999px;
+  font-size: 13px; font-weight: 600;
+  opacity: 0;
+  transition: all 0.25s cubic-bezier(0.34,1.56,0.64,1);
+  pointer-events: none;
+  z-index: 100;
+  white-space: nowrap;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+#toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ═══════════════════════════════════════
+   WHT TOGGLE
+═══════════════════════════════════════ */
+.wht-group { display: flex; flex-direction: column; gap: 8px; }
+.wht-opt {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  font-size: 14px; font-weight: 500;
+  color: var(--text);
+  transition: border-color 0.15s, background 0.15s;
+  -webkit-tap-highlight-color: transparent;
+  line-height: 1.4;
+}
+.wht-opt:active { opacity: 0.75; }
+.wht-opt.selected {
+  border-color: var(--primary);
+  background: var(--primary-pale);
+  color: var(--primary);
+  font-weight: 700;
+}
+.wht-dot {
+  width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0;
+  border: 2px solid var(--muted);
+  background: transparent;
+  display: flex; align-items: center; justify-content: center;
+  transition: border-color 0.15s, background 0.15s;
+}
+.wht-opt.selected .wht-dot {
+  border-color: var(--primary);
+  background: var(--primary);
+}
+.wht-opt.selected .wht-dot::after {
+  content: ''; width: 8px; height: 8px;
+  border-radius: 50%; background: white;
+  display: block;
+}
+.wht-info-box {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--orange-bg);
+  color: var(--orange);
+  border-radius: var(--r-sm);
+  padding: 10px 13px;
+  font-size: 13px; font-weight: 700;
+  margin-top: 10px;
+}
+.stat.wht { background: var(--orange-bg); }
+.stat.wht .lbl { color: var(--orange); }
+.stat.wht .val { color: var(--orange); }
+
+/* ═══════════════════════════════════════
+   SECTION SPACER
+═══════════════════════════════════════ */
+.gap { height: 2px; }
+
+/* ═══════════════════════════════════════
+   CTA ROW
+═══════════════════════════════════════ */
+.cta-row {
+  background: var(--card);
+  border-radius: var(--r);
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  box-shadow: var(--shadow-sm);
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ████ HEADER ████ -->
+  <div id="header">
+    <div class="hdr-icon">📋</div>
+    <div class="hdr-text">
+      <h1>คำนวณค่าเช่าที่ดิน</h1>
+      <p id="hdrSub">กำลังคำนวณ…</p>
+    </div>
+    <div class="hdr-actions">
+      <button class="hdr-btn" onclick="doShare()" title="แชร์">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+          <polyline points="16 6 12 2 8 6"/>
+          <line x1="12" y1="2" x2="12" y2="15"/>
+        </svg>
+      </button>
+      <button class="hdr-btn" onclick="doReset()" title="รีเซ็ต">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="1 4 1 10 7 10"/>
+          <path d="M3.51 15a9 9 0 1 0 .49-3.37"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ████ CONTENT ████ -->
+  <div id="content">
+
+    <!-- ── TAB 1: ข้อมูล ── -->
+    <div class="section active" id="sec-input">
+      <div class="gap"></div>
+
+      <div class="card">
+        <div class="card-title">🏢 ข้อมูลโครงการ</div>
+        <div class="field">
+          <label>ชื่อสาขา / โครงการ</label>
+          <input type="text" id="branch" value="" placeholder="ระบุชื่อสาขา…" autocomplete="off" />
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label>กว้าง (เมตร)</label>
+            <input type="number" id="width" value="" placeholder="0" min="0" step="0.5" inputmode="decimal" />
+          </div>
+          <div class="field">
+            <label>ลึก (เมตร)</label>
+            <input type="number" id="depth" value="" placeholder="0" min="0" step="0.5" inputmode="decimal" />
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">💰 ค่าเช่า</div>
+        <div class="field">
+          <label>ค่าเช่ารายเดือน (บาท)</label>
+          <input type="number" id="rent" value="" placeholder="0" min="0" step="500" inputmode="numeric" />
+          <div class="hint">ค่าเช่าเริ่มต้นในเดือนแรกของสัญญา</div>
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label>ปรับขึ้น (%)</label>
+            <input type="number" id="incPct" value="5" min="0" max="100" step="0.5" inputmode="decimal" />
+          </div>
+          <div class="field">
+            <label>ปรับทุกๆ (ปี)</label>
+            <input type="number" id="incEvery" value="5" min="1" max="30" step="1" inputmode="numeric" />
+          </div>
+        </div>
+        <div class="field">
+          <label>ระยะเวลาสัญญา (ปี)</label>
+          <input type="number" id="years" value="15" min="1" max="30" step="1" inputmode="numeric" />
+        </div>
+        <div class="field" style="margin-top:6px;">
+          <label>ภาษีหัก ณ ที่จ่าย 5%</label>
+          <div class="wht-group" id="whtGroup">
+            <div class="wht-opt selected" data-wht="none" onclick="setWht('none')">
+              <div class="wht-dot"></div>
+              <span>ไม่มี</span>
+            </div>
+            <div class="wht-opt" data-wht="owner" onclick="setWht('owner')">
+              <div class="wht-dot"></div>
+              <div>
+                เจ้าของที่ดินรับผิดชอบจ่าย
+                <div style="font-size:11px;font-weight:500;opacity:0.75;margin-top:1px;">บริษัทจ่ายค่าเช่าปกติ แต่หัก 5% ส่งสรรพากรแทน</div>
+              </div>
+            </div>
+            <div class="wht-opt" data-wht="company" onclick="setWht('company')">
+              <div class="wht-dot"></div>
+              <div>
+                บริษัทรับผิดชอบจ่าย
+                <div style="font-size:11px;font-weight:500;opacity:0.75;margin-top:1px;">บริษัทออกค่าเช่า + 5% ให้เจ้าของที่ดินเต็มจำนวน</div>
+              </div>
+            </div>
+          </div>
+          <div id="whtInfoBox"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📅 ค่าใช้จ่ายต้นสัญญา</div>
+        <div class="row2">
+          <div class="field">
+            <label>ล่วงหน้า (เดือน)</label>
+            <input type="number" id="advMonths" value="" placeholder="0" min="0" max="36" step="1" inputmode="numeric" />
+            <div class="hint">เช่น 6 เดือน</div>
+          </div>
+          <div class="field">
+            <label>ค่ามัดจำ (เดือน)</label>
+            <input type="number" id="depMonths" value="" placeholder="0" min="0" max="12" step="1" inputmode="numeric" />
+            <div class="hint">เช่น 3 เดือน</div>
+          </div>
+        </div>
+        <div class="field">
+          <label>ค่าถมที่ดิน (บาท)</label>
+          <input type="number" id="landFill" value="0" min="0" step="1000" inputmode="numeric" />
+          <div class="hint">ใส่ 0 ถ้าไม่มีค่าถม</div>
+        </div>
+      </div>
+
+      <div class="cta-row">
+        <button class="btn btn-primary" onclick="switchTab('summary')">
+          ดูผลการคำนวณ
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- ── TAB 2: สรุป ── -->
+    <div class="section" id="sec-summary">
+      <div class="gap"></div>
+      <div id="bigStat"></div>
+      <div id="statGrid"></div>
+      <div class="card">
+        <div class="card-title">📈 แนวโน้มค่าเช่า (รายปี)</div>
+        <div class="chart-scroll">
+          <div class="bars" id="chartBars"></div>
+        </div>
+        <div style="display:flex;gap:12px;margin-top:8px;font-size:11px;color:var(--muted);">
+          <span style="display:flex;align-items:center;gap:4px;">
+            <span style="width:12px;height:10px;border-radius:2px;background:var(--primary);display:inline-block;"></span>ปกติ
+          </span>
+          <span style="display:flex;align-items:center;gap:4px;">
+            <span style="width:12px;height:10px;border-radius:2px;background:var(--orange);display:inline-block;"></span>ปีที่ปรับขึ้น
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TAB 3: ตาราง ── -->
+    <div class="section" id="sec-table">
+      <div class="gap"></div>
+      <div class="card">
+        <div class="card-title">📅 ตารางค่าเช่ารายปี</div>
+        <div class="tbl-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>ปีที่</th>
+                <th>ค่าเช่า/เดือน</th>
+                <th>รายปี</th>
+                <th>สะสม</th>
+                <th>สถานะ</th>
+              </tr>
+            </thead>
+            <tbody id="sched-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🔼 จุดปรับขึ้นค่าเช่า</div>
+        <div class="tbl-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>ครั้งที่</th>
+                <th>เริ่มปีที่</th>
+                <th>ค่าเช่า/เดือน</th>
+                <th>เพิ่มขึ้น</th>
+              </tr>
+            </thead>
+            <tbody id="adj-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TAB 4: NPV ── -->
+    <div class="section" id="sec-npv">
+      <div class="gap"></div>
+      <div class="card">
+        <div class="card-title">📐 มูลค่าปัจจุบันสุทธิ (NPV)</div>
+        <div class="field">
+          <label>อัตราคิดลด — Discount Rate (%/ปี)</label>
+          <input type="number" id="discRate" value="7" min="0" max="30" step="0.5" inputmode="decimal" />
+          <div class="hint">ผลตอบแทนขั้นต่ำที่คาดหวัง เช่น อัตราดอกเบี้ยเงินกู้ หรือ 7%</div>
+        </div>
+        <div class="npv-card">
+          <div class="lbl">NPV ค่าเช่าตลอดสัญญา (มูลค่าในวันนี้)</div>
+          <div class="val" id="npvVal">—</div>
+        </div>
+        <div class="npv-note">
+          💡 NPV แสดงมูลค่าของเงินที่ต้องจ่ายทั้งหมด ณ วันนี้ โดยคำนึงว่าเงินในอนาคตมีค่าน้อยกว่าในปัจจุบัน — ยิ่ง NPV ต่ำ ยิ่งคุ้มค่ากว่า
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📋 ข้อมูลสรุปโครงการ</div>
+        <div id="infoRows"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">⚙️ จัดการ</div>
+        <button class="btn btn-primary" onclick="doShare()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+            <polyline points="16 6 12 2 8 6"/>
+            <line x1="12" y1="2" x2="12" y2="15"/>
+          </svg>
+          แชร์ผลการคำนวณ
+        </button>
+        <button class="btn btn-outline" onclick="doCopy()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+          </svg>
+          คัดลอกผลลัพธ์
+        </button>
+        <button class="btn btn-danger" onclick="doReset()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.37"/>
+          </svg>
+          รีเซ็ตข้อมูลทั้งหมด
+        </button>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+
+  <!-- ████ TAB BAR ████ -->
+  <div id="tabbar">
+    <button class="tab active" onclick="switchTab('input')" data-sec="input">
+      <span class="ico">📝</span>ข้อมูล
+    </button>
+    <button class="tab" onclick="switchTab('summary')" data-sec="summary">
+      <span class="ico">📊</span>สรุป
+    </button>
+    <button class="tab" onclick="switchTab('table')" data-sec="table">
+      <span class="ico">📅</span>ตาราง
+    </button>
+    <button class="tab" onclick="switchTab('npv')" data-sec="npv">
+      <span class="ico">🔢</span>NPV
+    </button>
+  </div>
+
+</div><!-- /app -->
+
+<div id="toast"></div>
+
+<script>
+/* ─── helpers ─── */
+const $ = id => document.getElementById(id);
+const fmt    = n => Number(n).toLocaleString('th-TH', {minimumFractionDigits:2, maximumFractionDigits:2});
+const fmtInt = n => Math.round(Number(n)).toLocaleString('th-TH');
+
+/* ─── tab navigation ─── */
+function switchTab(name) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+  $('sec-' + name).classList.add('active');
+  document.querySelector('[data-sec="' + name + '"]').classList.add('active');
+  $('content').scrollTop = 0;
+}
+
+/* ─── toast ─── */
+let toastTimer = null;
+function toast(msg) {
+  const el = $('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2600);
+}
+
+/* ─── WHT toggle ─── */
+function setWht(mode) {
+  document.querySelectorAll('.wht-opt').forEach(el => {
+    el.classList.toggle('selected', el.dataset.wht === mode);
+  });
+  compute();
+}
+
+/* ─── read all inputs ─── */
+function vals() {
+  return {
+    branch:    $('branch').value.trim() || 'สาขา XXX',
+    rent:      Math.max(0, +$('rent').value     || 0),
+    incPct:    Math.max(0, +$('incPct').value   || 0) / 100,
+    incEvery:  Math.max(1, +$('incEvery').value || 1),
+    years:     Math.min(30, Math.max(1, +$('years').value || 1)),
+    width:     Math.max(0, +$('width').value    || 0),
+    depth:     Math.max(0, +$('depth').value    || 0),
+    advMonths: Math.max(0, +$('advMonths').value|| 0),
+    depMonths: Math.max(0, +$('depMonths').value|| 0),
+    landFill:  Math.max(0, +$('landFill').value || 0),
+    discRate:  Math.max(0, +$('discRate').value || 7) / 100,
+    whtMode:   document.querySelector('.wht-opt.selected')?.dataset.wht || 'none',
+  };
+}
+
+/* ─── main compute ─── */
+function compute() {
+  const v = vals();
+  const area     = v.width * v.depth;
+
+  // ── WHT: หัก ณ ที่จ่าย 5% ──
+  // 'owner'  : เจ้าของรับผิดชอบ
+  //   ค่าเช่าหลังหัก = rentBase × 0.95  (เจ้าของได้รับจริง)
+  //   ยอดบริษัทจ่ายออก = rentBase (ไม่เปลี่ยน, แค่แยกจ่าย 95% ให้เจ้าของ + 5% สรรพากร)
+  // 'company': บริษัทรับผิดชอบ
+  //   ค่าเช่าหลังหัก = rentBase ÷ 0.95  (gross-up ให้เจ้าของได้รับเต็ม rentBase)
+  //   ยอดบริษัทจ่ายออก = rentBase ÷ 0.95
+  const whtRate  = 0.05;
+  const whtMult  = v.whtMode === 'company' ? (1 / (1 - whtRate)) : 1; // ÷0.95 สำหรับ company
+
+  // ค่าเช่าหลังหัก ณ ที่จ่าย เดือนแรก
+  const netRentFirst = v.whtMode === 'owner'   ? v.rent * (1 - whtRate)      // ×0.95
+                     : v.whtMode === 'company' ? v.rent / (1 - whtRate)      // ÷0.95
+                     : null;
+  // WHT เดือนแรก
+  const whtFirst = v.whtMode === 'owner'   ? v.rent * whtRate
+                 : v.whtMode === 'company' ? (v.rent / (1 - whtRate)) * whtRate
+                 : 0;
+
+  const advTotal = v.rent * v.advMonths * whtMult;
+  const depTotal = v.rent * v.depMonths;
+  const upfront  = advTotal + depTotal + v.landFill;
+
+  // แสดง/ซ่อน WHT info box ในหน้าแรก
+  const whtInfoBox = $('whtInfoBox');
+  if (v.whtMode !== 'none' && v.rent > 0) {
+    const netDesc = v.whtMode === 'owner'
+      ? `ค่าเช่า × 0.95 = <strong>${fmt(netRentFirst)} บาท/เดือน</strong>`
+      : `ค่าเช่า ÷ 0.95 = <strong>${fmt(netRentFirst)} บาท/เดือน</strong>`;
+    whtInfoBox.innerHTML = `
+      <div class="wht-info-box" style="flex-direction:column;align-items:flex-start;gap:6px;line-height:1.5;">
+        <div>🧾 WHT เดือนแรก: <strong>${fmt(whtFirst)} บาท</strong></div>
+        <div style="color:var(--primary);font-size:14px;">📌 ค่าเช่าหลังหัก ณ ที่จ่าย: ${netDesc}</div>
+      </div>`;
+  } else {
+    whtInfoBox.innerHTML = '';
+  }
+
+  /* schedule rows */
+  const rows = [];
+  let cumul = 0;
+  for (let y = 1; y <= v.years; y++) {
+    const blk      = Math.floor((y - 1) / v.incEvery);
+    const rentBase = v.rent * Math.pow(1 + v.incPct, blk);
+    // ค่าเช่าหลังหัก ณ ที่จ่าย ตามสูตรที่กำหนด
+    const netRent  = v.whtMode === 'owner'   ? rentBase * (1 - whtRate)   // ×0.95
+                   : v.whtMode === 'company' ? rentBase / (1 - whtRate)   // ÷0.95
+                   : null;
+    const monthly  = rentBase * whtMult;   // ยอดที่บริษัทจ่ายออก (= netRent ถ้า company, = rentBase ถ้า owner)
+    const whtMo    = v.whtMode === 'owner'   ? rentBase * whtRate
+                   : v.whtMode === 'company' ? netRent * whtRate
+                   : 0;
+    const annual   = monthly * 12;
+    cumul += annual;
+    const adjusted = y > 1 && (y - 1) % v.incEvery === 0;
+    rows.push({ y, rentBase, netRent, monthly, whtMo, annual, cumul, adjusted });
+  }
+  const totalRent    = cumul;
+  const totalWht     = rows.reduce((s, r) => s + r.whtMo * 12, 0);
+  const totalNetRent = v.whtMode !== 'none'
+    ? rows.reduce((s, r) => s + (r.netRent ?? 0) * 12, 0) : null;
+  const lastMo    = rows[rows.length - 1]?.monthly ?? v.rent;
+  const adjCount  = Math.max(0, Math.floor((v.years - 1) / v.incEvery));
+  const avgMo     = totalRent / (v.years * 12);
+  const sqmRate   = area > 0 ? v.rent / area : 0;
+
+  /* NPV (monthly discounting — ใช้ยอดจ่ายจริงรวม WHT ถ้า company) */
+  let npv = 0;
+  const mr = v.discRate / 12;
+  let mo = 0;
+  for (let y = 1; y <= v.years; y++) {
+    const blk     = Math.floor((y - 1) / v.incEvery);
+    const monthly = v.rent * Math.pow(1 + v.incPct, blk) * whtMult;
+    for (let m = 0; m < 12; m++) {
+      mo++;
+      npv += monthly / Math.pow(1 + mr, mo);
+    }
+  }
+
+  /* ── header subtitle ── */
+  $('hdrSub').textContent = v.branch + (area > 0 ? '  ·  ' + fmtInt(area) + ' ตร.ม.' : '');
+
+  /* ── WHT badge label ── */
+  const whtLabel = v.whtMode === 'none' ? '' :
+    v.whtMode === 'owner' ? ' (หัก ณ ที่จ่าย — เจ้าของที่จ่าย)' : ' (รวม WHT 5% บริษัทจ่าย)';
+
+  /* ── big stat ── */
+  $('bigStat').innerHTML = `
+    <div class="big-stat">
+      <div class="lbl">ภาระรวมทั้งหมด (ต้นสัญญา + ค่าเช่าตลอดสัญญา)${whtLabel}</div>
+      <div><span class="amt">${fmt(upfront + totalRent)}</span><span class="unit">บาท</span></div>
+      <div class="sub">ตลอด ${v.years} ปี (${v.years * 12} เดือน)</div>
+    </div>`;
+
+  /* ── stat grid ── */
+  const whtStats = v.whtMode !== 'none' && v.rent > 0 ? `
+      <div class="stat wht">
+        <div class="lbl">🧾 WHT 5% เดือนแรก</div>
+        <div class="val">${fmt(whtFirst)}</div>
+      </div>
+      <div class="stat wht">
+        <div class="lbl">🧾 WHT 5% รวมตลอดสัญญา</div>
+        <div class="val">${fmt(totalWht)}</div>
+      </div>` : '';
+
+  $('statGrid').innerHTML = `
+    <div class="stat-grid">
+      <div class="stat">
+        <div class="lbl">ค่าเช่ารวมตลอดสัญญา${v.whtMode === 'company' ? ' (รวม WHT)' : ''}</div>
+        <div class="val">${fmt(totalRent)}</div>
+      </div>
+      <div class="stat">
+        <div class="lbl">รวมเงินต้นสัญญา</div>
+        <div class="val">${fmt(upfront)}</div>
+      </div>
+      <div class="stat">
+        <div class="lbl">ล่วงหน้า${v.whtMode === 'company' ? ' (รวม WHT)' : ''}</div>
+        <div class="val">${fmt(advTotal)}</div>
+      </div>
+      <div class="stat">
+        <div class="lbl">ค่ามัดจำ</div>
+        <div class="val">${fmt(depTotal)}</div>
+      </div>
+      <div class="stat">
+        <div class="lbl">จ่ายจริงเดือนแรก</div>
+        <div class="val">${fmt(v.rent * whtMult)}</div>
+      </div>
+      <div class="stat">
+        <div class="lbl">จ่ายจริงเดือนสุดท้าย</div>
+        <div class="val">${fmt(lastMo)}</div>
+      </div>
+      <div class="stat">
+        <div class="lbl">เฉลี่ย/เดือน</div>
+        <div class="val">${fmt(avgMo)}</div>
+      </div>
+      <div class="stat orange">
+        <div class="lbl">จำนวนครั้งที่ปรับ</div>
+        <div class="val">${adjCount} ครั้ง</div>
+      </div>
+      ${whtStats}
+      ${area > 0 ? `
+      <div class="stat">
+        <div class="lbl">พื้นที่</div>
+        <div class="val">${fmt(area)} ตร.ม.</div>
+      </div>
+      <div class="stat green">
+        <div class="lbl">ค่าเช่า/ตร.ม./เดือน</div>
+        <div class="val">${fmt(sqmRate)}</div>
+      </div>` : ''}
+    </div>`;
+
+  /* ── bar chart ── */
+  const maxAnn = Math.max(...rows.map(r => r.annual), 1);
+  $('chartBars').innerHTML = rows.map(r =>
+    `<div class="bar-col ${r.adjusted ? 'adj' : ''}">
+       <div class="bar-fill" style="height:${Math.round((r.annual / maxAnn) * 80)}px"></div>
+       <div class="bar-lbl">ปี${r.y}</div>
+     </div>`
+  ).join('');
+
+  /* ── schedule table — แสดง WHT column เมื่อเปิดใช้ ── */
+  const showWht = v.whtMode !== 'none';
+  const whtTh   = showWht ? `<th>WHT 5%/เดือน</th>` : '';
+  const whtColspan = showWht ? 3 : 2;
+
+  // อัปเดต header ของตาราง
+  document.querySelector('#sec-table thead tr').innerHTML = `
+    <th>ปีที่</th>
+    <th>ค่าเช่า/เดือน</th>
+    ${whtTh}
+    <th>รายปี</th>
+    <th>สะสม</th>
+    <th>สถานะ</th>`;
+
+  $('sched-body').innerHTML = rows.map(r =>
+    `<tr class="${r.adjusted ? 'adj' : ''}">
+       <td class="c">${r.y}</td>
+       <td>${fmt(r.rentBase)}</td>
+       ${showWht ? `<td>${fmt(r.whtMo)}</td>` : ''}
+       <td>${fmt(r.annual)}</td>
+       <td>${fmt(r.cumul)}</td>
+       <td class="c">${r.adjusted ? '<span class="badge">↑ปรับ</span>' : ''}</td>
+     </tr>`
+  ).join('') + `
+    <tr class="ttl">
+      <td class="l" colspan="${whtColspan}">รวมทั้งสัญญา</td>
+      ${showWht ? `<td>${fmt(totalWht)}</td>` : ''}
+      <td>${fmt(totalRent)}</td>
+      <td colspan="2"></td>
+    </tr>`;
+
+  /* ── adjustment table ── */
+  const adjs = [];
+  for (let n = 0; n * v.incEvery + 1 <= v.years; n++) {
+    const sy      = n * v.incEvery + 1;
+    const monthly = v.rent * Math.pow(1 + v.incPct, n);
+    const prev    = n === 0 ? 0 : v.rent * Math.pow(1 + v.incPct, n - 1);
+    adjs.push({ n, sy, monthly, diff: monthly - prev });
+  }
+  $('adj-body').innerHTML = adjs.map(a =>
+    `<tr ${a.n > 0 ? 'class="adj"' : ''}>
+       <td class="c">${a.n === 0 ? 'เริ่มต้น' : a.n}</td>
+       <td class="c">ปี ${a.sy}</td>
+       <td>${fmt(a.monthly)}</td>
+       <td>${a.n === 0 ? '—' : '+' + fmt(a.diff)}</td>
+     </tr>`
+  ).join('');
+
+  /* ── NPV display ── */
+  $('npvVal').textContent = fmt(npv) + ' บาท';
+
+  /* ── info rows ── */
+  const whtModeLabel = { none: 'ไม่มี', owner: 'เจ้าของที่จ่าย', company: 'บริษัทจ่าย' }[v.whtMode];
+  const whtInfoRows = v.whtMode !== 'none' ? [
+    ['🧾 WHT 5% เดือนแรก',        fmt(whtFirst) + ' บาท'],
+    ['🧾 WHT 5% รวมตลอดสัญญา',    fmt(totalWht) + ' บาท'],
+  ] : [];
+
+  $('infoRows').innerHTML = [
+    ['สาขา / โครงการ',  v.branch],
+    ['พื้นที่',          v.width + ' × ' + v.depth + ' = ' + fmt(area) + ' ตร.ม.'],
+    ['ค่าเช่าเริ่มต้น', fmt(v.rent) + ' บาท/เดือน'],
+    ['การปรับขึ้น',     (v.incPct * 100) + '% ทุก ' + v.incEvery + ' ปี'],
+    ['ระยะสัญญา',       v.years + ' ปี (' + (v.years * 12) + ' เดือน)'],
+    ['ภาษีหัก ณ ที่จ่าย', whtModeLabel],
+    ...whtInfoRows,
+    ['ล่วงหน้า + มัดจำ', fmt(advTotal) + ' + ' + fmt(depTotal) + ' บาท'],
+    ['ค่าถมที่ดิน',      fmt(v.landFill) + ' บาท'],
+    ['เงินต้นสัญญารวม', fmt(upfront) + ' บาท'],
+    ['ค่าเช่ารวม',       fmt(totalRent) + ' บาท'],
+    ['ภาระรวมทั้งหมด',  fmt(upfront + totalRent) + ' บาท'],
+  ].map(([k, vv]) =>
+    `<div class="info-row"><span class="k">${k}</span><span class="v">${vv}</span></div>`
+  ).join('');
+
+  save();
+}
+
+/* ─── build share text ─── */
+function buildText() {
+  const v        = vals();
+  const area     = v.width * v.depth;
+  const whtRate  = 0.05;
+  const whtMult  = v.whtMode === 'company' ? (1 + whtRate) : 1;
+  const advTotal = v.rent * v.advMonths * whtMult;
+  const depTotal = v.rent * v.depMonths;
+  const upfront  = advTotal + depTotal + v.landFill;
+  let cumul = 0, whtTotal = 0;
+  for (let y = 1; y <= v.years; y++) {
+    const blk  = Math.floor((y - 1) / v.incEvery);
+    const base = v.rent * Math.pow(1 + v.incPct, blk);
+    cumul    += base * whtMult * 12;
+    whtTotal += base * whtRate * 12;
+  }
+  const whtLine = v.whtMode === 'none' ? '' :
+    v.whtMode === 'owner'
+      ? `\n🧾 หัก ณ ที่จ่าย 5%: ${fmt(whtTotal)} บาท (เจ้าของที่จ่าย)`
+      : `\n🧾 หัก ณ ที่จ่าย 5%: ${fmt(whtTotal)} บาท (บริษัทออก รวมในยอดแล้ว)`;
+
+  return `📋 ผลคำนวณค่าเช่าที่ดิน
+สาขา: ${v.branch}
+พื้นที่: ${v.width}×${v.depth} ม. = ${fmtInt(area)} ตร.ม.
+
+💰 ค่าเช่าเริ่มต้น: ${fmt(v.rent)} บาท/เดือน
+📈 ปรับขึ้น ${v.incPct * 100}% ทุก ${v.incEvery} ปี
+⏱ ระยะสัญญา: ${v.years} ปี${whtLine}
+
+🏦 เงินต้นสัญญา: ${fmt(upfront)} บาท
+📊 ค่าเช่ารวม: ${fmt(cumul)} บาท
+✅ ภาระรวมทั้งหมด: ${fmt(upfront + cumul)} บาท
+
+— คำนวณโดย แอปคำนวณค่าเช่าที่ดิน`;
+}
+
+/* ─── share ─── */
+function doShare() {
+  const text = buildText();
+  if (navigator.share) {
+    navigator.share({ title: 'ผลคำนวณค่าเช่า', text }).catch(() => {});
+  } else {
+    navigator.clipboard?.writeText(text)
+      .then(() => toast('📋 คัดลอกผลแล้ว'))
+      .catch(() => toast('❌ คัดลอกไม่ได้'));
+  }
+}
+
+/* ─── copy ─── */
+function doCopy() {
+  const text = buildText();
+  navigator.clipboard?.writeText(text)
+    .then(() => toast('📋 คัดลอกผลแล้ว'))
+    .catch(() => {
+      /* fallback */
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      ta.remove();
+      toast('📋 คัดลอกผลแล้ว');
+    });
+}
+
+/* ─── reset ─── */
+function doReset() {
+  if (!confirm('รีเซ็ตข้อมูลทั้งหมด?')) return;
+  // ล้างข้อมูลเฉพาะพื้นที่
+  ['branch','rent','width','depth','advMonths','depMonths','landFill'].forEach(k => {
+    if ($(k)) $(k).value = '';
+  });
+  // คืนค่าตั้งค่าสัญญา
+  $('incPct').value  = 5;
+  $('incEvery').value = 5;
+  $('years').value   = 15;
+  $('discRate').value = 7;
+  compute();
+  switchTab('input');
+  toast('🔄 รีเซ็ตเรียบร้อยแล้ว');
+}
+
+/* ─── localStorage (จำเฉพาะค่าตั้งค่าสัญญา ไม่จำข้อมูลพื้นที่) ─── */
+const STORE_KEY = 'rentCalc_v2';
+// ฟิลด์ที่จำ: เฉพาะค่าตั้งค่าสัญญาที่ใช้ร่วมกัน
+const SETTINGS_FIELDS = ['incPct', 'incEvery', 'years', 'discRate'];
+function save() {
+  const data = {};
+  SETTINGS_FIELDS.forEach(k => { if ($(k)) data[k] = $(k).value; });
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(data)); } catch(e) {}
+}
+function load() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    // โหลดเฉพาะ settings — ข้อมูลพื้นที่จะว่างเปล่าทุกครั้งที่เปิดหน้าใหม่
+    SETTINGS_FIELDS.forEach(k => { if ($(k) && data[k] !== undefined) $(k).value = data[k]; });
+  } catch(e) {}
+}
+
+/* ─── wire up inputs ─── */
+const INPUT_IDS = ['branch','rent','incPct','incEvery','years','width','depth','advMonths','depMonths','landFill','discRate'];
+INPUT_IDS.forEach(id => {
+  const el = $(id);
+  if (el) el.addEventListener('input', compute);
+});
+
+/* ─── init ─── */
+load();
+compute();
+</script>
+</body>
+</html>
